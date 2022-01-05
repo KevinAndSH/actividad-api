@@ -1,11 +1,11 @@
 const path = require('path');
-const db = require('../database/models');
+const db = require('../../database/models');
 const sequelize = db.sequelize;
 const { Op } = require("sequelize");
 const moment = require('moment');
 
 
-//Aqui tienen otra forma de llamar a cada uno de los modelos
+//* Aqui tienen otra forma de llamar a cada uno de los modelos
 const Movies = db.Movie;
 const Genres = db.Genre;
 const Actors = db.Actor;
@@ -54,7 +54,7 @@ const moviesController = {
                 res.render('recommendedMovies.ejs', {movies});
             });
     },
-    //Aqui dispongo las rutas para trabajar con el CRUD
+    //* Aqui dispongo las rutas para trabajar con el CRUD
     add: function (req, res) {
         let promGenres = Genres.findAll();
         let promActors = Actors.findAll();
@@ -66,23 +66,33 @@ const moviesController = {
         .catch(error => res.send(error))
     },
 
+    //todo: Este método permite añadir nuevas entradas a la base de datos
     create: async function (req,res) {
+        let newMovie = {
+            title: req.body.title,
+            rating: req.body.rating,
+            awards: req.body.awards,
+            release_date: req.body.release_date,
+            length: req.body.length,
+            genre_id: req.body.genre_id
+        }
+
         try {
-            await Movies.create(
-                {
-                    title: req.body.title,
-                    rating: req.body.rating,
-                    awards: req.body.awards,
-                    release_date: req.body.release_date,
-                    length: req.body.length,
-                    genre_id: req.body.genre_id
-                }
-            )
+            await Movies.create(newMovie)
+            res.status(200).json({
+                success: true,
+                data: newMovie
+            })
             return res.redirect('/movies')
         } catch (error) {
-            res.send(error)
+            res.status(400).json({
+                success: false,
+                error,
+                data: null
+            })
         }
     },
+
     edit: function(req,res) {
         let movieId = req.params.id;
         let promMovies = Movies.findByPk(movieId,{include: ['genre','actors']});
@@ -123,14 +133,23 @@ const moviesController = {
         .catch(error => res.send(error))
     },
 
-    destroy: function (req,res) {
-        let movieId = req.params.id;
-        Movies
-        .destroy({where: {id: movieId}, force: true}) // force: true es para asegurar que se ejecute la acción
-        .then(()=>{
-            return res.redirect('/movies')})
-        .catch(error => res.send(error)) 
+    //todo: Este método permite eliminar entradas de la base de datos
+    destroy: async function (req,res) {
+        try {
+            await Movies.destroy({where: { id: req.params.id }, force: true})
+            res.status(200).json({
+                success: true,
+                id: req.params.id
+            })
+            return res.redirect('/movies')
+        } catch (error) {
+            res.status(400).json({
+                success: false,
+                error
+            })
+        }
     }
 }
+
 
 module.exports = moviesController;
